@@ -158,8 +158,8 @@
         <div class="form-group"><label>Agama</label><select id="agama"><option value="">Pilih...</option><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option><option>Khonghucu</option><option>Lainnya</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Mata Kiri</label><input type="text" id="mataKiri" placeholder="1.0"></div>
-        <div class="form-group"><label>Mata Kanan</label><input type="text" id="mataKanan" placeholder="0.8"></div>
+        <div class="form-group"><label>Mata Kiri</label><input type="text" id="mataKiri" placeholder="1,0" onblur="formatVisus(this)">
+        <div class="form-group"><label>Mata Kanan</label><input type="text" id="mataKanan" placeholder="0,8" onblur="formatVisus(this)">
       </div>
       <div class="form-row full"><div class="form-group"><label>Alamat Lengkap</label><textarea id="alamat" placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi" oninput="autoKapital(this)"></textarea></div></div>
     </div>
@@ -398,6 +398,7 @@ function selectRadio(f,val,el){radioValues[f]=val;document.getElementById(f).que
 function hitungUsia(){const t=v('tanggalLahir');if(!t)return;const d=new Date(t),n=new Date();let a=n.getFullYear()-d.getFullYear();if(n.getMonth()-d.getMonth()<0||(n.getMonth()-d.getMonth()===0&&n.getDate()<d.getDate()))a--;document.getElementById('usia').value=a;}
 function showToast(msg,isErr=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(isErr?' error':'');setTimeout(()=>t.className='toast',3500);}
 function setLoading(title,sub){document.getElementById('loadingTitle').textContent=title;document.getElementById('loadingSubtitle').textContent=sub;}
+function formatVisus(el){let val=el.value.trim().replace('.',',');if(!val)return;if(/^[0-9]+$/.test(val))val=val+',0';el.value=val;}
 
 // FOTO
 function previewFoto(input) {
