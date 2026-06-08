@@ -158,8 +158,8 @@
         <div class="form-group"><label>Agama</label><select id="agama"><option value="">Pilih...</option><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option><option>Khonghucu</option><option>Lainnya</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Mata Kiri</label><input type="text" id="mataKiri" placeholder="1,0" onblur="formatVisus(this)">
-        <div class="form-group"><label>Mata Kanan</label><input type="text" id="mataKanan" placeholder="0,8" onblur="formatVisus(this)">
+        <div class="form-group"><label>Mata Kiri</label><input type="text" id="mataKiri" placeholder="1,0" onblur="formatVisus(this)"></div>
+        <div class="form-group"><label>Mata Kanan</label><input type="text" id="mataKanan" placeholder="0,8" onblur="formatVisus(this)"></div>
       </div>
       <div class="form-row full"><div class="form-group"><label>Alamat Lengkap</label><textarea id="alamat" placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi" oninput="autoKapital(this)"></textarea></div></div>
     </div>
@@ -190,7 +190,7 @@
         <div class="form-group"><label>Berapa Kali Interview</label><input type="number" id="berapaKaliInterview" placeholder="0" min="0"></div>
       </div>
       <div class="form-row full" style="margin-top:12px">
-        <div class="form-group"><label>Hobi</label><select id="hobi"><option value="">Pilih...</option><option>Sepak bola</option><option>Badminton</option><option>Basket</option><option>Voli</option><option>Baseball</option><option>Joging</option><option>Lari</option><option>Futsal</option><option>Mendaki gunung</option><option>Memancing</option><option>Membaca buku</option><option>Mendengarkan musik</option><option>Menonton film</option><option>Anime</option><option>Game</option><option>Menggambar</option><option>Gym</option><option>Memasak</option><option>Menyanyi</option><option>Berenang</option><option>Boxing</option></select></div>
+        <div class="form-group"><label>Hobi</label><select id="hobi"><option value="">Pilih...</option></select></div>
       </div>
       <div class="form-row full"><div class="form-group"><label>Deskripsi Diri</label><textarea id="deskripsiDiri" placeholder="Ceritakan tentang diri kamu..."></textarea></div></div>
       <div class="form-row full"><div class="form-group"><label>Jumlah Uang yang Ingin Ditabung (Rp)</label><input type="text" id="jumlahTabungan" placeholder="0" oninput="formatRupiah(this)" inputmode="numeric"></div></div>
@@ -264,7 +264,7 @@
 
 <script>
 // CONFIG
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXNg0Bp0r_P3_kDalfu8V75v9RO8aQkBkS6qUkp0b9Cp-mFhFuMaIZQrxxO-BcYpQi/exec';
+const APPS_SCRIPT_URL = https://script.google.com/macros/s/AKfycbzv5brdhu6Xc46w1iaBIyGgLo3vJxbonvwstJWbqktOYE_rk9mrSTy3OnBrhJR4PxeM/exec
 const CLOUDINARY_CLOUD = 'dok27xp0t';
 const CLOUDINARY_PRESET = 'Form Kandidat';
 
@@ -275,8 +275,9 @@ let fotoFile = null;
 let fotoBase64 = '';
 let fotoMimeType = '';
 
-// KAMUS
-const KAMUS_STATIC = {
+// KAMUS (data cadangan — dipakai kalau sheet Dropdown gagal diload)
+let KAMUS_STATIC = {
+  hobi:['Sepak bola','Badminton','Basket','Voli','Baseball','Joging','Lari','Futsal','Mendaki gunung','Memancing','Membaca buku','Mendengarkan musik','Menonton film','Anime','Game','Menggambar','Gym','Memasak','Menyanyi','Berenang','Boxing'],
   jenjang:['SD','SMP','SMA','SMK','Diploma3','Strata1'],
   jurusanSMA:['IPA','IPS','BAHASA'],
   jurusanSMK:['KENDARAAN','TEKNIK MESIN','TEKNIK LISTRIK','TEKNIK ELEKTRONIKA','TEKNIK PENGELASAN','TEKNIK KONSTRUKSI','KOMPUTER','AKUNTANSI','ADMINISTRASI','LOGISTIK','TATA BUSANA','TATA BOGA','PERHOTELAN','WISATA','PEMASARAN','MARKETING','DESAIN GRAFIS','PERFILMAN','SENI MUSIK','SENI RUPA','PENERBANGAN','FARMASI','KEPERAWATAN','PERTANIAN','KRIYA KERAMIK','MULTIMEDIA'],
@@ -314,13 +315,38 @@ const KAMUS_STATIC = {
   }
 };
 
-// INIT
-window.onload = function() {
+// INIT — ambil dropdown dari sheet Dropdown, fallback ke KAMUS_STATIC
+window.onload = async function() {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'getDropdown' }) });
+    const dd = await res.json();
+    if (dd && !dd.error) {
+      if (dd.hobi && dd.hobi.length)         KAMUS_STATIC.hobi = dd.hobi;
+      if (dd.hubungan && dd.hubungan.length) KAMUS_STATIC.hubungan = dd.hubungan;
+      if (dd.jenjang && dd.jenjang.length)   KAMUS_STATIC.jenjang = dd.jenjang;
+      if (dd.bidang && dd.bidang.length) {
+        const bp = {};
+        dd.bidang.forEach(b => bp[b] = (dd.profesi && dd.profesi[b]) ? dd.profesi[b] : []);
+        KAMUS_STATIC.bidangPekerjaan = bp;
+      }
+      if (dd.jurusan) KAMUS_STATIC.jurusanDinamis = dd.jurusan;
+    }
+  } catch(e) { console.warn('Pakai dropdown cadangan:', e); }
+
+  isiHobi();
   buildPendidikan();
   buildPekerjaan();
   buildKeluarga();
   document.getElementById('loadingScreen').style.display = 'none';
 };
+
+// Isi dropdown hobi dari KAMUS_STATIC
+function isiHobi(){
+  const sel = document.getElementById('hobi');
+  if (!sel) return;
+  const list = KAMUS_STATIC.hobi || [];
+  sel.innerHTML = '<option value="">Pilih...</option>' + list.map(h=>`<option>${h}</option>`).join('');
+}
 
 // BUILD FORMS
 function buildPendidikan() {
@@ -340,8 +366,8 @@ function buildPendidikan() {
 function onJenjangChange(i) {
   const j = document.getElementById(`pend${i}Jenjang`).value;
   const s = document.getElementById(`pend${i}Jurusan`);
-  let opts = j==='SMA'?KAMUS_STATIC.jurusanSMA:j==='SMK'?KAMUS_STATIC.jurusanSMK:(j==='Diploma3'||j==='Strata1')?KAMUS_STATIC.jurusanD3S1:[];
-  if(opts.length){s.innerHTML='<option value="">Pilih jurusan...</option>'+opts.map(o=>`<option>${o}</option>`).join('');s.disabled=false;}
+  let opts = (KAMUS_STATIC.jurusanDinamis && KAMUS_STATIC.jurusanDinamis[j]) ? KAMUS_STATIC.jurusanDinamis[j] : (j==='SMA'?KAMUS_STATIC.jurusanSMA:j==='SMK'?KAMUS_STATIC.jurusanSMK:(j==='Diploma3'||j==='Strata1')?KAMUS_STATIC.jurusanD3S1:[]);
+  if(opts && opts.length){s.innerHTML='<option value="">Pilih jurusan...</option>'+opts.map(o=>`<option>${o}</option>`).join('');s.disabled=false;}
   else{s.innerHTML='<option value="">Tidak ada jurusan</option>';s.disabled=true;}
 }
 
@@ -390,7 +416,7 @@ function buildKeluarga() {
   }
 }
 
-// HELPERS - hanya sekali!
+// HELPERS
 function v(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 function autoKapital(el){const p=el.selectionStart;el.value=el.value.toUpperCase();el.setSelectionRange(p,p);}
 function formatRupiah(el){let r=el.value.replace(/[^0-9]/g,'');el.value=r?parseInt(r).toLocaleString('id-ID'):'';}
@@ -494,7 +520,6 @@ function goToPreview(){
 async function submitForm(){
   document.getElementById('loadingOverlay').classList.add('show');
 
-  // Step 1: Get NoId dari Apps Script
   setLoading('⏳ Mempersiapkan...','Mengambil nomor kandidat');
   let noIdBrowser='';
   try{
@@ -505,11 +530,9 @@ async function submitForm(){
     noIdBrowser='KD-'+Date.now().toString().slice(-4);
   }
 
-  // Step 2: Upload foto ke Cloudinary pakai NoId
   setLoading('📤 Mengupload foto...','Foto sedang diunggah');
   const linkFoto=fotoFile?await uploadFotoCloudinary(noIdBrowser):'';
 
-  // Step 3: Submit data
   setLoading('💾 Menyimpan data...','Data sedang disimpan ke database');
   const data={
     furigana:v('furigana'),romaji:v('romaji'),tanggalLahir:v('tanggalLahir'),
